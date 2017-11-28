@@ -231,9 +231,9 @@ case class ParseError(stack: List[(Location,String)] = List()) {
 }
 
 object Parsers {
-  def unit[A](a: A): Parsers[A] = ???
-
-  def flatMap[A,B](ma: Parsers[A])(f: A => Parsers[B]) = ???
+//  def unit[A](a: A): Parsers[A] = ???
+//
+//  def flatMap[A,B](ma: Parsers[A])(f: A => Parsers[B]) = ???
 
 
 }
