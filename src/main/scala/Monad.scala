@@ -40,7 +40,7 @@ trait Monad[F[_]] extends Functor[F] {
   def flatMapViaJoinAndMap[A,B](ma: F[A])(f: A => F[B]): F[B] =
     join(map(ma)(f))
 
-  def compose[A,B,C](f: A => F[B], g: B => F[C]): A => F[C] =
+  def composeViaJoin[A,B,C](f: A => F[B], g: B => F[C]): A => F[C] =
     a => join(map(f(a))(g))
 
 
@@ -72,6 +72,9 @@ trait Monad[F[_]] extends Functor[F] {
   flatMap(unit(a))(f)
   => f(unit(a))
   => f(a)
+
+  flatMap(getState)(setState) =
+
    */
 
   /*
@@ -107,12 +110,6 @@ object Monad {
     override def flatMap[A, B](ma: Par[A])(f: A => Par[B]) = Par.flatMap(ma)(f)
   }
 
-//  val ParserMonad = new Monad[Parsers] {
-//    override def unit[A](a: => A) = Parsers.unit(a)
-//
-//    override def flatMap[A, B](ma: Parsers[A])(f: A => Parsers[B]) =
-//      Parsers.flatMap(ma)(f)
-//  }
 
   val OptionMonad = new Monad[Option] {
     override def unit[A](a: => A) = Some(a)
@@ -200,7 +197,21 @@ object Monad {
     override def flatMap[A, B](ma: State[S, A])(f: (A) => State[S, B]) = ma flatMap f
   }
 
+/*
+  chaining 으로 사이즈가 n인 List를 결과로 가지고 있는 State를 만들어낸다. flatMap이 chaining 으로 이어나가기 때문에 매번 같은 State를 넘겨서 작동하는 것이 아니라
+  한 State에서 chain으로 연결된다.
+
+  2개의 상태를 받아서 하나의 결과를 내보내는 State를 만들어낸다. 다만 만들어진 결과를 돌려주는 것이 아닌 두 개의 State가 결합된 State를 돌려준다.
+
+  상태 하나를 받아서 각각의 State에 적용시켜 결과를 가져올 수 있도록 하는 List[State]를 만들어낸다.
+ */
   
+
+  def getState[S]: State[S, S] = State(s => (s,s))
+  def setState[S](s: S): State[S, Unit] = State(_ => ((), s))
+
+
+
 
 }
 
@@ -217,5 +228,12 @@ object Main extends App {
   println(OptionMonad.compose(F, (a:Int) => OptionMonad.unit(a))(1))
   println(F(1))
 
+  println(stateMonad[Int].replicateM(10, State(s => (1, s))).run(2))
 
+  println((stateMonad[Int].map2(State(s => (s, s)), State(s => (s, s)))((a,b) => (a + b))).run(4))
+
+  println(stateMonad[Int].sequence(List(State[Int,Int](s => (s+ 1,s)), State[Int, Int](s => (s+4, s)))).run(3))
+
+  println(getState[Int].flatMap[Unit](setState[Int]).run(1))
+  println(stateMonad.unit(1).run(1))
 }
